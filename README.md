@@ -64,8 +64,18 @@ file is opened on its own. Filtering, charts, the watchlist, Excel upload
 
 ## Regenerating the dashboard with new data
 
-If you'd rather not use the in-page "Upload Excel" button, you can rebuild the
-file from scratch:
+Drop the updated workbook in as `scratchpad/Action Log.xlsx`, then either:
+
+- Run `node scratchpad/regenerate-dashboard.js` to rebuild `bugs-snapshot.json`,
+  `CADEx-Bug-Backlog-Dashboard.html`, and `index.html` from it (same column
+  mapping as the in-page "Upload Excel" button), or
+- Use the in-page "Upload Excel" button directly in the browser (no re-upload
+  to Claude needed), or
+- Run the full status-report flow below, which regenerates the dashboard as
+  its first step automatically.
+
+If you'd rather not use any of those, you can rebuild the file from scratch
+manually:
 
 1. Export your updated action log to JSON in the same shape as
    `bugs-snapshot.json` (fields: `sr`, `bug`, `date`, `subject`, `priority`,
@@ -74,6 +84,20 @@ file from scratch:
 2. In `dashboard-template.html`, replace the `__DATA__` placeholder
    (search for `const EMBEDDED_DATA = __DATA__;`) with that JSON array.
 3. Save the result as your new dashboard HTML file.
+
+## Generating the status report email
+
+`scratchpad/SendCadexReport.bat` (or `node scratchpad/send-cadex-report.js`)
+runs the whole pipeline in one shot: regenerates the dashboard from
+`Action Log.xlsx`, screenshots it with Playwright, builds an HTML email draft
+with those screenshots and the current summary numbers, and opens the draft
+in the Outlook desktop app for you to review and send. It never sends
+anything automatically.
+
+After regenerating, it checks the uploaded workbook for at least one row with
+"Active flag" = 1 (the same column the report's pending/escalation list keys
+off) — if none, nothing is currently in scope, and it stops there without
+building or opening a draft.
 
 ## Data source
 

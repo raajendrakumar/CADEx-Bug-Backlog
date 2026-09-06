@@ -985,10 +985,12 @@ function renderWatchlist(){
 // Always built from the FULL dataset (DATA), never the dashboard's active chart
 // filters — this is the one place meant to give an "overall" status regardless
 // of whatever you've isolated on screen.
+// "Pending" and the escalation ranking follow the workbook's own current filter — its
+// activeFlag/reportOrder columns — rather than a hardcoded status list, so this always
+// matches whatever the sheet itself considers in scope for the report (same logic as
+// scratchpad/build_eml.py, which builds the standalone emailed report from this same data).
 function buildEmailSummary(){
-  const total = DATA.length;
-  const pending = DATA.filter(r => PENDING_STATUSES.includes(r.status));
-  const closed = DATA.filter(r => r.status === 'Closed').length;
+  const pending = DATA.filter(r => r.activeFlag);
   const dated = pending.filter(r => r.age != null);
   const avgAge = dated.length ? (dated.reduce((s,r)=>s+r.age,0)/dated.length) : 0;
   const oldest = dated.length ? Math.max(...dated.map(r=>r.age)) : null;
@@ -998,7 +1000,11 @@ function buildEmailSummary(){
   const over6 = pending.filter(r => ['7-12 mo','13-24 mo','25+ mo'].includes(r.bucket)).length;
   const over12 = pending.filter(r => OVER12_BUCKETS.includes(r.bucket)).length;
   const criticalPending = pending.filter(r=>r.priority==='P0 — Critical').length;
-  const escalations = DATA.filter(r => r.status === 'Open').sort((a,b) => (b.age ?? -1) - (a.age ?? -1)).slice(0,10);
+  const escalations = pending.filter(r => r.reportOrder != null).sort((a,b) => a.reportOrder - b.reportOrder).slice(0,10);
+  const priorityCounts = uniqCounted(pending, 'priority');
+  const priorityBreakdown = PRIORITY_ORDER.filter(p => priorityCounts.get(p)).map(p => `${p}: ${priorityCounts.get(p)}`);
+  const categoryCounts = uniqCounted(pending, 'category');
+  const categoryBreakdown = [...categoryCounts.entries()].sort((a,b) => b[1]-a[1]).map(([cat,c]) => `${cat}: ${c}`);
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const now = new Date();
   const today = String(now.getDate()).padStart(2,'0') + '-' + MONTHS[now.getMonth()] + '-' + now.getFullYear();
@@ -1008,19 +1014,25 @@ function buildEmailSummary(){
     '',
     'Hi Team,',
     '',
-    `Below is the overall status of CADEx bugs reported to CAD Exchanger, as at ${today}.`,
-    `Scope: full backlog — all ${total} bugs${dataMeta.source !== 'embedded' ? ' (' + (dataMeta.fileName || 'uploaded data') + ')' : ''}`,
+    `Below is the current status of CADEx bugs reported to CAD Exchanger, as at ${today}.`,
+    `Scope: ${pending.length} active bug${pending.length===1?'':'s'} currently in scope (Active flag = 1)${dataMeta.source !== 'embedded' ? ' — ' + (dataMeta.fileName || 'uploaded data') : ''}`,
     '',
     'Summary',
-    `Total: ${total} | Pending: ${pending.length} | Closed: ${closed}`,
+    `Pending: ${pending.length}`,
     `12+ months: ${over12} | 6+ months: ${over6} | 3+ months: ${over3}`,
     `Avg age (pending): ${dated.length ? avgAge.toFixed(1) : '—'} mo | Oldest pending: ${oldest != null ? oldest : '—'} mo | Critical (P0) pending: ${criticalPending}`,
     ''
   ];
+  if(priorityBreakdown.length){
+    lines.push('Pending by priority', priorityBreakdown.join(' | '), '');
+  }
+  if(categoryBreakdown.length){
+    lines.push('Pending by category', categoryBreakdown.join(' | '), '');
+  }
   if(escalations.length){
-    lines.push(`Top ${escalations.length} open escalation${escalations.length===1?'':'s'} (oldest first)`);
+    lines.push(`Top ${escalations.length} pending escalation${escalations.length===1?'':'s'} (oldest first)`);
     escalations.forEach((r,i) => {
-      lines.push(`${i+1}. [${r.bug || '—'}] ${r.subject} — ${r.priority}, ${r.age != null ? r.age+' mo old' : 'age unknown'}, reported by ${r.reporter}`);
+      lines.push(`${i+1}. [${r.bug || '—'}] ${r.subject} — ${r.priority}, ${r.status}, ${r.age != null ? r.age+' mo old' : 'age unknown'}, reported by ${r.reporter}`);
     });
     lines.push('');
   }
@@ -1386,7 +1398,14 @@ function parseWorkbookToRecords(workbook){
       age: num(r[12]),
       bucket: r[22] || 'No date',
       comment: nrm(r[10]) || null,
-      model: nrm(r[14]) || null
+      model: nrm(r[14]) || null,
+      // The workbook's own "Active flag" / "Report order" columns (26 and 31) — its live,
+      // maintained view of which bugs currently belong in the status report, and in what
+      // order. Kept alongside `status` rather than replacing it: the dashboard's own
+      // charts/KPIs still key off `status`, but the emailed report uses these to match
+      // what the sheet itself considers "in scope" right now.
+      activeFlag: r[26] === 1,
+      reportOrder: num(r[31])
     };
   }).filter(r => r.subject);
 
