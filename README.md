@@ -4,20 +4,40 @@ An interactive dashboard for True ValueHub's CADEx bug action log — built from
 `Action_Log.xlsx` (the "CadEx Reported Bugs" sheet), covering all 119 reported
 bugs.
 
-**Live version:** https://claude.ai/code/artifact/5ee408d4-9e9a-4e21-8b33-4d7ec4860cb4
+**Live on GitHub Pages:** https://raajendrakumar.github.io/CADEx-Bug-Backlog/
+(enable Pages once — see [Enabling GitHub Pages](#enabling-github-pages)
+below — after that this link stays live and updates on every push to `main`)
+
+**Live on claude.ai:** https://claude.ai/code/artifact/5ee408d4-9e9a-4e21-8b33-4d7ec4860cb4
+(supports "Save for everyone" — the GitHub Pages copy doesn't, since Pages
+serves static files with no server-side storage)
 
 ## What's in this folder
 
+- **`index.html`** — identical to `CADEx-Bug-Backlog-Dashboard.html`, present
+  so GitHub Pages serves the dashboard at the repo's root URL automatically.
 - **`CADEx-Bug-Backlog-Dashboard.html`** — the full, ready-to-use dashboard.
-  Double-click to open it in any browser. This is the same file that's
-  published at the live link above, with the 06 Sep 2026 data snapshot baked
-  in.
+  Double-click to open it in any browser, with the 06 Sep 2026 data snapshot
+  baked in.
 - **`dashboard-template.html`** — the same dashboard as source code, with a
   `__DATA__` placeholder where the bug records get inserted. Useful if you
   want to edit the design/layout yourself and regenerate the final file.
 - **`bugs-snapshot.json`** — the 119 bug records extracted from the
   spreadsheet, as plain JSON. This is what gets substituted into
   `__DATA__` in the template.
+- **`.nojekyll`** — tells GitHub Pages to serve the files as-is, skipping
+  Jekyll processing (not needed for a plain static site like this one).
+
+## Enabling GitHub Pages
+
+One-time setup, from the GitHub web UI (not something a `git push` can turn
+on by itself):
+
+1. Go to **Settings → Pages** in this repo.
+2. Under **Build and deployment → Source**, choose **Deploy from a branch**.
+3. Set **Branch** to `main` and the folder to `/ (root)`, then **Save**.
+4. GitHub builds the site (usually under a minute) and the live URL above
+   starts working. Every future push to `main` redeploys it automatically.
 
 ## Features
 
