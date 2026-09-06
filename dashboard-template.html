@@ -168,6 +168,43 @@
   }
   .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* ---------------- Sticky quick-nav ---------------- */
+  [id]{ scroll-margin-top: 74px; }
+  .quicknav{
+    position: fixed; top:0; left:0; right:0; z-index: 25;
+    background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: var(--shadow);
+    transform: translateY(-100%); transition: transform .18s ease;
+  }
+  .quicknav.show{ transform: translateY(0); }
+  .quicknav-inner{
+    max-width: 1280px; margin: 0 auto; padding: 9px 24px; display:flex; align-items:center;
+    gap: 18px; flex-wrap: nowrap; overflow-x: auto;
+  }
+  .quicknav-title{
+    font-family: "IBM Plex Sans Condensed"; font-weight: 700; font-size: 13.5px; white-space: nowrap;
+    cursor: pointer; color: var(--ink); flex-shrink: 0; background: none; border: none; padding: 0;
+  }
+  .quicknav-links{ display:flex; gap: 3px; flex-shrink: 0; }
+  .quicknav-links a{
+    font-size: 12px; padding: 6px 10px; border-radius: 7px; color: var(--ink-2); cursor: pointer;
+    text-decoration: none; transition: background .12s, color .12s; white-space: nowrap;
+  }
+  .quicknav-links a:hover{ background: var(--surface-2); color: var(--accent); }
+  .quicknav-links a.active{ background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+  .quicknav-status{
+    margin-left: auto; display:flex; align-items:center; gap: 8px; font-size: 12px; color: var(--ink-2);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .theme-toggle{
+    border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2);
+    width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 13px;
+    display:flex; align-items:center; justify-content:center; flex-shrink: 0; padding: 0;
+  }
+  .theme-toggle:hover{ border-color: var(--accent); color: var(--accent); }
+  @media (max-width: 900px){ .quicknav-links{ display:none; } }
+
+  mark.hl{ background: var(--accent-wash); color: var(--ink); border-radius: 2px; padding: 0 1px; }
+
   /* ---------------- Email summary modal ---------------- */
   .modal-overlay{
     position: fixed; inset: 0; background: rgba(11,11,11,0.45); backdrop-filter: blur(1px);
@@ -236,6 +273,7 @@
   .chip .n{ color: var(--ink-3); margin-left: 4px; }
   .chip.active{ background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   .chip.active .n{ color: var(--accent-ink); opacity: .8; }
+  .chip.zero{ opacity: .45; }
   .filter-right{ margin-left: auto; display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
   .search-box{
     display:flex; align-items:center; gap:8px; background: var(--surface); border: 1px solid var(--line-strong);
@@ -274,11 +312,12 @@
   .sw{ width:8px; height:8px; border-radius:2px; display:inline-block; }
 
   .barchart{ display:flex; flex-direction: column; gap: 9px; }
-  .bar-row{ display: grid; grid-template-columns: 128px 1fr 40px; align-items: center; gap: 10px; border-radius: 6px; padding: 2px 4px; margin: -2px -4px; transition: background .12s, opacity .15s; }
+  .bar-row{ display: grid; grid-template-columns: 128px 1fr auto; align-items: center; gap: 10px; border-radius: 6px; padding: 2px 4px; margin: -2px -4px; transition: background .12s, opacity .15s; }
   .bar-row .label{ font-size: 12px; color: var(--ink-2); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bar-track{ background: var(--surface-2); border-radius: 5px; height: 15px; overflow: hidden; }
   .bar-fill{ height: 100%; border-radius: 5px; min-width: 3px; transition: width .35s ease, opacity .15s; }
-  .bar-row .val{ font-size: 12px; color: var(--ink-2); font-weight: 500; }
+  .bar-row .val{ font-size: 12px; color: var(--ink-2); font-weight: 500; white-space: nowrap; text-align: right; }
+  .bar-row .val .pct{ color: var(--ink-3); font-weight: 400; font-size: 11px; margin-left: 3px; }
   .bar-row.clickable{ cursor: pointer; }
   .bar-row.clickable:hover{ background: var(--surface-2); }
   .bar-row.clickable:hover .label{ color: var(--accent); }
@@ -398,6 +437,24 @@
   </div>
 </div>
 
+<div class="quicknav" id="quicknav">
+  <div class="quicknav-inner">
+    <button class="quicknav-title" id="quicknavTitle" type="button">CADEx Bug Backlog</button>
+    <nav class="quicknav-links">
+      <a data-target="kpis">Overview</a>
+      <a data-target="charts-section">Charts</a>
+      <a data-target="watchlist-section">Escalations</a>
+      <a data-target="email-section">Email</a>
+      <a data-target="table-section">Table</a>
+    </nav>
+    <div class="quicknav-status">
+      <span id="quicknavFilterText">All 119 bugs shown</span>
+      <a class="clear-link" id="quicknavReset" hidden>Reset</a>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button" title="Toggle theme">◐</button>
+  </div>
+</div>
+
 <div class="wrap">
 
   <div class="data-bar" id="dataBar">
@@ -461,7 +518,7 @@
     </div>
   </div>
 
-  <div class="grid-2">
+  <div class="grid-2" id="charts-section">
     <div class="card">
       <h3>By status</h3>
       <div class="card-sub" id="sub-status">Where the backlog currently sits — click a bar to isolate it</div>
@@ -509,7 +566,7 @@
     </div>
   </div>
 
-  <div class="card watchlist-card">
+  <div class="card watchlist-card" id="watchlist-section">
     <div class="watchlist-head">
       <div>
         <h3>Top 20 open bugs</h3>
@@ -525,7 +582,7 @@
     <div class="watchlist" id="watchlist"></div>
   </div>
 
-  <div class="card watchlist-card">
+  <div class="card watchlist-card" id="email-section">
     <div class="watchlist-head">
       <div>
         <h3>Email summary</h3>
@@ -537,7 +594,7 @@
     <span class="modal-hint" id="emailInlineCopyHint"></span>
   </div>
 
-  <div class="table-card">
+  <div class="table-card" id="table-section">
     <div class="table-head-bar">
       <h3 style="font-size:13px;">Bug detail</h3>
       <div class="card-sub" id="tableCount" style="margin:0;">Showing 119 of 119</div>
@@ -663,6 +720,39 @@ function filtered(){
   });
 }
 
+// Same as filtered(), but ignores the filter on `excludeKey` — used so a chart or the
+// chip row for one dimension keeps showing every value in that dimension (for context /
+// so you can still click back to it) while still respecting every OTHER active filter.
+function filteredExcept(excludeKey){
+  const q = state.search.trim().toLowerCase();
+  return DATA.filter(r => {
+    for(const k of FILTER_KEYS){
+      if(k === excludeKey) continue;
+      if(!state[k].has(r[k])) return false;
+    }
+    if(state.pendingOnly && !PENDING_STATUSES.includes(r.status)) return false;
+    if(q){
+      const hay = (r.subject+' '+(r.bug||'')+' '+(r.model||'')).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+// Escapes text for safe HTML insertion, then wraps the current search term in <mark> so
+// matches are visible at a glance in the table / watchlist, same as the search box implies.
+function highlightText(text){
+  const esc = escapeHtml(text);
+  const q = state.search.trim();
+  if(!q) return esc;
+  const re = new RegExp('(' + escapeRegExp(escapeHtml(q)) + ')', 'ig');
+  return esc.replace(re, '<mark class="hl">$1</mark>');
+}
+
 // ---------------- Renderers ----------------
 function renderChips(){
   const defs = [
@@ -670,10 +760,17 @@ function renderChips(){
     ['category','chips-category'], ['reporter','chips-reporter']
   ];
   defs.forEach(([key, id]) => {
-    const counts = uniqCounted(DATA, key);
-    const order = key === 'priority' ? PRIORITY_ORDER.filter(p=>counts.has(p)) : [...counts.keys()].sort((a,b)=>counts.get(b)-counts.get(a));
+    // Counts reflect every OTHER active filter (cross-filtering), but the set of chips shown
+    // never shrinks to just what's currently selected — so you can always click back out.
+    const counts = uniqCounted(filteredExcept(key), key);
+    const order = key === 'priority'
+      ? PRIORITY_ORDER.filter(p => ALL[key].includes(p))
+      : [...ALL[key]].sort((a,b) => (counts.get(b)||0) - (counts.get(a)||0));
     const el = document.getElementById(id);
-    el.innerHTML = order.map(v => `<span class="chip ${state[key].has(v)?'active':''}" data-key="${key}" data-val="${v.replace(/"/g,'&quot;')}">${v}<span class="n">${counts.get(v)}</span></span>`).join('');
+    el.innerHTML = order.map(v => {
+      const c = counts.get(v) || 0;
+      return `<span class="chip ${state[key].has(v)?'active':''} ${c===0?'zero':''}" data-key="${key}" data-val="${v.replace(/"/g,'&quot;')}" title="${c} bug${c===1?'':'s'} match your other filters">${v}<span class="n">${c}</span></span>`;
+    }).join('');
   });
   document.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', () => toggleFilter(chip.dataset.key, chip.dataset.val));
@@ -741,16 +838,19 @@ document.getElementById('kpis').addEventListener('click', (e) => {
 
 function barChart(containerId, entries, filterKey){
   const max = Math.max(1, ...entries.map(e => e.count));
+  const total = entries.reduce((s,e) => s+e.count, 0) || 1;
   const el = document.getElementById(containerId);
   const isolated = filterKey && ALL[filterKey] && state[filterKey].size > 0 && state[filterKey].size < ALL[filterKey].length;
   el.innerHTML = entries.map(e => {
     const dimmed = isolated && !state[filterKey].has(e.label);
     const clickable = !!filterKey;
+    const pct = Math.round(100*e.count/total);
+    const titleTxt = `${e.count} bug${e.count===1?'':'s'} · ${pct}% of ${total} shown — click to isolate ${e.label}`;
     return `
-    <div class="bar-row ${clickable?'clickable':''} ${dimmed?'dimmed':''}" ${clickable?`data-key="${filterKey}" data-val="${e.label.replace(/"/g,'&quot;')}" title="Click to isolate ${e.label}"`:''}>
+    <div class="bar-row ${clickable?'clickable':''} ${dimmed?'dimmed':''}" ${clickable?`data-key="${filterKey}" data-val="${e.label.replace(/"/g,'&quot;')}" title="${titleTxt.replace(/"/g,'&quot;')}"`:''}>
       <div class="label" title="${e.label}">${e.label}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.max(3, 100*e.count/max)}%; background:${e.color}"></div></div>
-      <div class="val tnum">${e.count}</div>
+      <div class="val tnum">${e.count}<span class="pct">· ${pct}%</span></div>
     </div>`;
   }).join('') || '<div class="empty-note">No matching bugs</div>';
 
@@ -761,28 +861,31 @@ function barChart(containerId, entries, filterKey){
   }
 }
 
+// Each dimension's chart is computed from data filtered by every OTHER active filter
+// (not its own) — so isolating one category dims its siblings instead of erasing them,
+// and clicking a dimmed bar back in still works because it never left the chart.
 function renderCharts(list){
-  const statusCounts = uniqCounted(list, 'status');
+  const statusCounts = uniqCounted(filteredExcept('status'), 'status');
   const statusEntries = [...statusCounts.entries()].sort((a,b)=>b[1]-a[1])
     .map(([label,count]) => ({label, count, color: tierVar(STATUS_TIER[label]||'muted')}));
   barChart('chart-status', statusEntries, 'status');
 
-  const prioCounts = uniqCounted(list, 'priority');
+  const prioCounts = uniqCounted(filteredExcept('priority'), 'priority');
   const prioEntries = PRIORITY_ORDER.filter(p=>prioCounts.has(p))
     .map(label => ({label, count: prioCounts.get(label), color: tierVar(PRIORITY_TIER[label]||'muted')}));
   barChart('chart-priority', prioEntries, 'priority');
 
-  const catCounts = uniqCounted(list, 'category');
+  const catCounts = uniqCounted(filteredExcept('category'), 'category');
   const catEntries = [...catCounts.entries()].sort((a,b)=>b[1]-a[1])
     .map(([label,count]) => ({label, count, color: 'var(--accent)'}));
   barChart('chart-category', catEntries, 'category');
 
-  const repCounts = uniqCounted(list, 'reporter');
+  const repCounts = uniqCounted(filteredExcept('reporter'), 'reporter');
   const repEntries = [...repCounts.entries()].sort((a,b)=>b[1]-a[1])
     .map(([label,count]) => ({label, count, color: 'var(--accent)'}));
   barChart('chart-reporter', repEntries, 'reporter');
 
-  const bucketCounts = uniqCounted(list, 'bucket');
+  const bucketCounts = uniqCounted(filteredExcept('bucket'), 'bucket');
   const bucketEntries = BUCKET_ORDER.filter(b=>bucketCounts.has(b))
     .map(label => ({label, count: bucketCounts.get(label), color: BUCKET_TONE[label]}));
   barChart('chart-aging', bucketEntries, 'bucket');
@@ -855,17 +958,17 @@ function renderWatchlist(){
       <div class="wl-rank">${i+1}</div>
       <div class="wl-age" style="color:var(--${ageTone})">${r.age != null ? r.age+' mo' : '—'}</div>
       <div class="wl-main">
-        <span class="wl-subject" title="${r.subject.replace(/"/g,'&quot;')}">${r.subject}</span>
+        <span class="wl-subject" title="${r.subject.replace(/"/g,'&quot;')}">${highlightText(r.subject)}</span>
         <div class="wl-meta">
-          <span class="mono">${r.bug || '—'}</span>
-          <span>${r.category}</span>
-          <span>${r.reporter}</span>
+          <span class="mono">${highlightText(r.bug || '—')}</span>
+          <span>${escapeHtml(r.category)}</span>
+          <span>${escapeHtml(r.reporter)}</span>
           <span>${r.openDays != null ? r.openDays+' days open' : ''}</span>
         </div>
       </div>
       <div class="wl-side">${pill(r.priority, PRIORITY_TIER[r.priority]||'muted')}</div>
     </div>
-    <div class="wl-detail" id="wl-detail-${i}"><b>Comment</b>${r.comment || 'No comment logged.'}${r.model ? ' &nbsp;·&nbsp; <b>Model</b>'+r.model : ''}</div>`;
+    <div class="wl-detail" id="wl-detail-${i}"><b>Comment</b>${escapeHtml(r.comment) || 'No comment logged.'}${r.model ? ' &nbsp;·&nbsp; <b>Model</b>'+highlightText(r.model) : ''}</div>`;
   }).join('');
 
   el.querySelectorAll('.wl-row').forEach(row => {
@@ -1064,23 +1167,23 @@ function renderTable(list){
       <tr class="detail-row" id="detail-${i}">
         <td colspan="8">
           <div class="detail-grid">
-            <div><b>Model</b>${r.model || '—'}</div>
+            <div><b>Model</b>${r.model ? highlightText(r.model) : '—'}</div>
             <div><b>Days open</b>${r.openDays != null ? r.openDays : '—'}</div>
-            <div><b>Ageing bucket</b>${r.bucket}</div>
-            <div style="flex:1; min-width:220px;"><b>Comment</b>${r.comment || '—'}</div>
+            <div><b>Ageing bucket</b>${escapeHtml(r.bucket)}</div>
+            <div style="flex:1; min-width:220px;"><b>Comment</b>${r.comment ? escapeHtml(r.comment) : '—'}</div>
           </div>
         </td>
       </tr>`;
     return `
       <tr class="data-row" data-row="${i}" style="--stripe:${stripe}">
-        <td class="mono" style="--stripe:${stripe}">${r.bug || '—'}</td>
+        <td class="mono" style="--stripe:${stripe}">${highlightText(r.bug || '—')}</td>
         <td class="mono">${r.date || '—'}</td>
-        <td>${r.category}</td>
+        <td>${escapeHtml(r.category)}</td>
         <td>${pill(r.priority, PRIORITY_TIER[r.priority]||'muted')}</td>
         <td>${pill(r.status, STATUS_TIER[r.status]||'muted')}</td>
-        <td>${r.reporter}</td>
+        <td>${escapeHtml(r.reporter)}</td>
         <td class="tnum">${r.age != null ? r.age : '—'}</td>
-        <td class="subj-cell"><span class="txt" title="${r.subject.replace(/"/g,'&quot;')}">${r.subject}</span></td>
+        <td class="subj-cell"><span class="txt" title="${r.subject.replace(/"/g,'&quot;')}">${highlightText(r.subject)}</span></td>
       </tr>${detail}`;
   }).join('');
 
@@ -1108,7 +1211,75 @@ function renderAll(){
   renderCharts(list);
   renderTable(list);
   renderEmailSummary();
+  updateQuicknavStatus(list);
 }
+
+// ---------------- Sticky quick-nav: filter status, section links, theme toggle ----------------
+function updateQuicknavStatus(list){
+  const textEl = document.getElementById('quicknavFilterText');
+  const resetLink = document.getElementById('quicknavReset');
+  if(!textEl) return;
+  const anyFilterActive = FILTER_KEYS.some(k => state[k].size < (ALL[k]||[]).length) || state.pendingOnly || state.search.trim() !== '';
+  if(anyFilterActive){
+    textEl.textContent = `Showing ${list.length} of ${DATA.length} bugs (filtered)`;
+    resetLink.hidden = false;
+  } else {
+    textEl.textContent = `All ${DATA.length} bugs shown`;
+    resetLink.hidden = true;
+  }
+}
+document.getElementById('quicknavReset').addEventListener('click', () => document.getElementById('resetBtn').click());
+document.getElementById('quicknavTitle').addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+
+(function initQuicknav(){
+  const quicknav = document.getElementById('quicknav');
+  const navLinks = [...document.querySelectorAll('.quicknav-links a')];
+  const sections = navLinks
+    .map(a => ({ a, el: document.getElementById(a.dataset.target) }))
+    .filter(s => s.el);
+
+  navLinks.forEach(a => {
+    a.addEventListener('click', () => {
+      const el = document.getElementById(a.dataset.target);
+      if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  function onScroll(){
+    quicknav.classList.toggle('show', window.scrollY > 280);
+    const nearBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 8;
+    let current = sections[0];
+    if(nearBottom){
+      current = sections[sections.length - 1];
+    } else {
+      const y = window.scrollY + 100;
+      sections.forEach(s => { if(s.el.offsetTop <= y) current = s; });
+    }
+    navLinks.forEach(a => a.classList.toggle('active', current && a === current.a));
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+
+// Manual light/dark override on top of the OS-preference default; remembered per-browser.
+(function initThemeToggle(){
+  const btn = document.getElementById('themeToggle');
+  let saved = null;
+  try{ saved = localStorage.getItem('cadexTheme'); }catch(err){}
+  function apply(mode){
+    if(mode === 'light' || mode === 'dark') document.documentElement.dataset.theme = mode;
+    else delete document.documentElement.dataset.theme;
+    btn.textContent = mode === 'dark' ? '☀' : (mode === 'light' ? '🌙' : '◐');
+    btn.title = mode === 'dark' ? 'Dark mode (click for light)' : (mode === 'light' ? 'Light mode (click for auto)' : 'Auto — matches your system (click for dark)');
+  }
+  apply(saved);
+  btn.addEventListener('click', () => {
+    const cur = document.documentElement.dataset.theme || 'auto';
+    const next = cur === 'auto' ? 'dark' : (cur === 'dark' ? 'light' : 'auto');
+    apply(next === 'auto' ? null : next);
+    try{ next === 'auto' ? localStorage.removeItem('cadexTheme') : localStorage.setItem('cadexTheme', next); }catch(err){}
+  });
+})();
 
 // ---------------- Data source: load / upload / save ----------------
 let dbCap = null;          // resolved db capability namespace, or null if unavailable
